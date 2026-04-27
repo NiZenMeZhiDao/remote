@@ -31,7 +31,7 @@ class BridgeTxNode(Node):
         super().__init__("bridge_tx_node")
 
         self.declare_parameter("serial_port", "/dev/ttyUSB0")
-        self.declare_parameter("baudrate", 460800)
+        self.declare_parameter("baudrate", 115200)
         self.declare_parameter("loop_hz", 100.0)
         self.declare_parameter("joy_topic", "/joy")
         self.declare_parameter("feedback_topic", "/teleop_feedback")

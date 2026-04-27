@@ -39,7 +39,7 @@ class BridgeRxNode(Node):
         super().__init__("bridge_rx_node")
 
         self.declare_parameter("serial_port", "/dev/ttyUSB0")
-        self.declare_parameter("baudrate", 460800)
+        self.declare_parameter("baudrate", 115200)
         self.declare_parameter("loop_hz", 100.0)
         self.declare_parameter("frame_id", "remote_joy")
         self.declare_parameter("joy_output_topic", "/joy_remote")

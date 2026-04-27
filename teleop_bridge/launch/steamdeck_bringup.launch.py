@@ -52,8 +52,8 @@ def generate_launch_description() -> LaunchDescription:
     )
     baudrate_arg = DeclareLaunchArgument(
         "baudrate",
-        default_value="460800",
-        description="串口波特率，100Hz 下建议至少使用 460800。",
+        default_value="115200",
+        description="串口波特率，默认按无线透传模块的 115200 配置。",
     )
     loop_hz_arg = DeclareLaunchArgument(
         "loop_hz",

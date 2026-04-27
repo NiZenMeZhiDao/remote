@@ -114,7 +114,7 @@ if [[ "$OPEN_FIREWALL" -eq 1 ]] && need_cmd ufw && sudo ufw status | grep -q "St
 fi
 
 missing=0
-for element in ximagesrc videoconvert x264enc rtph264pay udpsink; do
+for element in ximagesrc videoconvert videoscale videorate x264enc rtph264pay udpsink; do
   if gst-inspect-1.0 "$element" >/dev/null 2>&1; then
     info "GStreamer element OK: $element"
   else
@@ -144,7 +144,8 @@ cat <<EOF
 
 裸 GStreamer 发送测试:
   gst-launch-1.0 -e ximagesrc use-damage=0 show-pointer=true ! \\
-    video/x-raw,framerate=30/1,width=1280,height=720 ! videoconvert ! \\
+    videoconvert ! videoscale ! videorate ! \\
+    video/x-raw,width=1280,height=720,framerate=30/1 ! \\
     x264enc tune=zerolatency speed-preset=ultrafast bitrate=4000 key-int-max=30 ! \\
     rtph264pay pt=96 config-interval=1 ! udpsink host=${TARGET_IP} port=${PORT} sync=false async=false
 EOF

@@ -1,0 +1,26 @@
+# ROS 2 / colcon build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor / OS temporary files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local runtime output
+*.bag
+*.db3
+*.mcap
+*.log
+*.tmp

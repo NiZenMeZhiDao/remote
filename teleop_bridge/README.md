@@ -89,10 +89,31 @@ Steam Deck 端：
 - `std_msgs`
 - `joy`
 - `pyserial`
+- GStreamer: 用于网口视频透传测试和 launch 中的外部推流/接收进程
+
+Ubuntu 22.04 + ROS 2 Humble 常用安装命令：
+
+```bash
+sudo apt update
+sudo apt install -y \
+  ros-humble-rclpy \
+  ros-humble-sensor-msgs \
+  ros-humble-std-msgs \
+  ros-humble-joy \
+  python3-serial \
+  python3-colcon-common-extensions \
+  gstreamer1.0-tools \
+  gstreamer1.0-plugins-base \
+  gstreamer1.0-plugins-good \
+  gstreamer1.0-plugins-bad \
+  gstreamer1.0-plugins-ugly \
+  gstreamer1.0-libav
+```
 
 ## 构建
 
 ```bash
+source /opt/ros/humble/setup.bash
 colcon build --packages-select teleop_bridge
 source install/setup.bash
 ```
@@ -104,7 +125,7 @@ Steam Deck 端：
 ```bash
 ros2 launch teleop_bridge steamdeck_bringup.launch.py \
   serial_port:=/dev/ttyUSB0 \
-  baudrate:=460800 \
+  baudrate:=115200 \
   loop_hz:=100.0
 ```
 
@@ -113,7 +134,7 @@ ros2 launch teleop_bridge steamdeck_bringup.launch.py \
 ```bash
 ros2 launch teleop_bridge robot_bringup.launch.py \
   serial_port:=/dev/ttyUSB0 \
-  baudrate:=460800 \
+  baudrate:=115200 \
   loop_hz:=100.0
 ```
 
@@ -124,7 +145,7 @@ ros2 launch teleop_bridge robot_bringup.launch.py \
 ```bash
 ros2 launch teleop_bridge robot_bringup.launch.py \
   serial_port:=/dev/ttyUSB0 \
-  baudrate:=460800 \
+  baudrate:=115200 \
   loop_hz:=100.0 \
   enable_video_stream:=true \
   video_target_ip:=192.168.1.10 \
@@ -140,7 +161,7 @@ Steam Deck 端：
 ```bash
 ros2 launch teleop_bridge steamdeck_bringup.launch.py \
   serial_port:=/dev/ttyUSB0 \
-  baudrate:=460800 \
+  baudrate:=115200 \
   loop_hz:=100.0 \
   enable_video_stream:=true \
   video_port:=5600 \
@@ -167,6 +188,47 @@ ros2 launch teleop_bridge steamdeck_bringup.launch.py \
   enable_video_stream:=true \
   video_port:=5600 \
   video_sink:=autovideosink
+```
+
+## VS Code 开发任务
+
+仓库根目录的 `.vscode/tasks.json` 已按当前 `teleop_bridge` 结构配置：
+
+- `teleop: build`: 构建 `teleop_bridge`
+- `teleop: run steamdeck`: 启动 Steam Deck 端，包含 `joy_node` 和 `bridge_tx_node`
+- `teleop: run robot`: 启动机器人端 `bridge_rx_node`
+- `teleop: run video receiver`: 只启动网口视频接收，不启动串口控制桥
+- `teleop: run video sender`: 只启动网口视频发送，不启动串口控制桥
+- `teleop: debug topics`: 并行查看 `/joy`、`/joy_remote`、`/teleop_link_connected`、`/teleop_feedback`
+
+如果你的串口设备不是 `/dev/ttyUSB0`，或接收端 IP 不是 `192.168.1.10`，
+请直接修改 `.vscode/tasks.json` 中对应 launch 参数。
+
+## Topic 调试
+
+查看 Steam Deck 本地手柄输入：
+
+```bash
+ros2 topic echo /joy
+```
+
+查看机器人端还原后的遥控输入：
+
+```bash
+ros2 topic echo /joy_remote
+```
+
+查看控制链路状态：
+
+```bash
+ros2 topic echo /teleop_link_connected
+```
+
+查看机器人回传反馈：
+
+```bash
+ros2 topic echo /teleop_feedback
+ros2 topic echo /teleop_feedback_flags
 ```
 
 ## Ubuntu 网口透传测试脚本
@@ -229,7 +291,7 @@ GStreamer 进程。也就是说：
 
 当前默认视频方案：
 
-- 机器人端: `ximagesrc + x264enc + RTP/UDP`
+- 机器人端: `ximagesrc + videoconvert + videoscale + videorate + x264enc + RTP/UDP`
 - Steam Deck 端: `udpsrc + H264 解码 + 本地窗口显示`
 
 更推荐的替代方案：
