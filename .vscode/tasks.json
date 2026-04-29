@@ -23,6 +23,16 @@
             "problemMatcher": []
         },
         {
+            "label": "teleop: steamdeck joystick mode",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "if [ -r /sys/module/hid_steam/parameters/lizard_mode ]; then echo before=$(cat /sys/module/hid_steam/parameters/lizard_mode); fi && sudo modprobe -r hid_steam || true; sudo modprobe hid_steam lizard_mode=0 && if [ -r /sys/module/hid_steam/parameters/lizard_mode ]; then echo after=$(cat /sys/module/hid_steam/parameters/lizard_mode); fi"
+            ],
+            "problemMatcher": []
+        },
+        {
             "label": "teleop: run steamdeck",
             "type": "shell",
             "command": "bash",
@@ -30,8 +40,10 @@
                 "-lc",
                 "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge steamdeck_bringup.launch.py serial_port:=/dev/ttyUSB0 baudrate:=115200 loop_hz:=100.0 enable_video_stream:=true video_port:=5600 video_sink:=autovideosink"
             ],
+            "dependsOrder": "sequence",
             "dependsOn": [
-                "teleop: build"
+                "teleop: build",
+                "teleop: steamdeck joystick mode"
             ],
             "problemMatcher": []
         },
@@ -41,7 +53,7 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge robot_bringup.launch.py serial_port:=/dev/ttyUSB0 baudrate:=115200 loop_hz:=100.0 enable_video_stream:=true video_target_ip:=192.168.1.10 video_port:=5600 video_width:=1280 video_height:=720 video_fps:=30 video_bitrate_kbps:=4000"
+                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge robot_bringup.launch.py serial_port:=/dev/ttyUSB0 baudrate:=115200 loop_hz:=100.0 enable_video_stream:=true video_target_ip:=10.20.12.220 video_port:=5600 video_width:=1280 video_height:=720 video_fps:=30 video_bitrate_kbps:=4000"
             ],
             "dependsOn": [
                 "teleop: build"
@@ -67,10 +79,40 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge robot_bringup.launch.py enable_control_link:=false enable_video_stream:=true video_target_ip:=192.168.1.10 video_port:=5600"
+                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge robot_bringup.launch.py enable_control_link:=false enable_video_stream:=true video_target_ip:=10.20.12.220 video_port:=5600"
             ],
             "dependsOn": [
                 "teleop: build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "teleop: show ip",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "ip -br addr"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "teleop: check video udp port",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "ss -lunp | grep -E '(:|\\.)5600\\b' || true"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "teleop: sniff video udp",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "sudo tcpdump -ni any udp port 5600"
             ],
             "problemMatcher": []
         },
