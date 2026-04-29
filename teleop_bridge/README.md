@@ -8,6 +8,14 @@
 这样做的目标是把“高带宽画面”和“低时延控制”彻底解耦，后续无论你把视频换成
 Moonlight、Sunshine、GStreamer 还是自定义桌面推流，都不会影响 ROS 2 控制链路。
 
+```bash
+cat /sys/module/hid_steam/parameters/lizard_mode
+```
+```bash
+sudo modprobe -r hid_steam
+sudo modprobe hid_steam lizard_mode=0
+```
+
 ## 当前实现
 
 Steam Deck 端：
