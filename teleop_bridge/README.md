@@ -207,7 +207,9 @@ ros2 launch teleop_bridge steamdeck_bringup.launch.py \
 - `teleop: run robot`: 启动机器人端 `bridge_rx_node`
 - `teleop: run video receiver`: 只启动网口视频接收，不启动串口控制桥
 - `teleop: run video sender`: 只启动网口视频发送，不启动串口控制桥
-- `teleop: debug topics`: 并行查看 `/joy`、`/joy_remote`、`/teleop_link_connected`、`/teleop_feedback`
+- `teleop: debug deck topics`: 并行查看 Steam Deck 侧 `/joy`、`/teleop_link_connected`、`/teleop_feedback`、`/teleop_feedback_flags`
+- `teleop: debug robot topics`: 并行查看机器人侧 `/joy_remote`、`/teleop_link_connected`、`/teleop_feedback_in`、`/teleop_feedback_flags_in`
+- `teleop: debug topics`: 并行查看常用控制和反馈 topic
 
 如果你的串口设备不是 `/dev/ttyUSB0`，或接收端 IP 不是 `192.168.1.10`，
 请直接修改 `.vscode/tasks.json` 中对应 launch 参数。

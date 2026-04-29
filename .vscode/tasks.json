@@ -135,13 +135,81 @@
             "problemMatcher": []
         },
         {
+            "label": "teleop: echo feedback flags",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 topic echo /teleop_feedback_flags"
+            ],
+            "presentation": {
+                "group": "teleop-debug",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "teleop: echo feedback input",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 topic echo /teleop_feedback_in"
+            ],
+            "presentation": {
+                "group": "teleop-debug",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "teleop: echo feedback flags input",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 topic echo /teleop_feedback_flags_in"
+            ],
+            "presentation": {
+                "group": "teleop-debug",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "teleop: debug deck topics",
+            "dependsOrder": "parallel",
+            "dependsOn": [
+                "teleop: echo /joy",
+                "teleop: echo link",
+                "teleop: echo feedback",
+                "teleop: echo feedback flags"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "teleop: debug robot topics",
+            "dependsOrder": "parallel",
+            "dependsOn": [
+                "teleop: echo /joy_remote",
+                "teleop: echo link",
+                "teleop: echo feedback input",
+                "teleop: echo feedback flags input"
+            ],
+            "problemMatcher": []
+        },
+        {
             "label": "teleop: debug topics",
             "dependsOrder": "parallel",
             "dependsOn": [
                 "teleop: echo /joy",
                 "teleop: echo /joy_remote",
                 "teleop: echo link",
-                "teleop: echo feedback"
+                "teleop: echo feedback",
+                "teleop: echo feedback flags"
             ],
             "problemMatcher": []
         }

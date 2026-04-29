@@ -16,9 +16,14 @@
             "tooltip": "Run robot side launch"
         },
         {
-            "label": "topics",
-            "task": "teleop: debug topics",
-            "tooltip": "Echo teleop debug topics"
+            "label": "deckk topics",
+            "task": "teleop: debug deck topics",
+            "tooltip": "Echo Steam Deck side topics"
+        },
+        {
+            "label": "robot topics",
+            "task": "teleop: debug robot topics",
+            "tooltip": "Echo robot side topics"
         }
     ],
     "[c]": {
