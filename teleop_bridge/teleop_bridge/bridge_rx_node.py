@@ -48,6 +48,7 @@ class BridgeRxNode(Node):
         self.declare_parameter("link_topic", "/teleop_link_connected")
         self.declare_parameter("stale_timeout_sec", 0.2)
         self.declare_parameter("publish_neutral_on_disconnect", True)
+        self.declare_parameter("diagnostic_log_period_sec", 2.0)
 
         serial_port = self.get_parameter("serial_port").value
         baudrate = int(self.get_parameter("baudrate").value)
@@ -63,6 +64,9 @@ class BridgeRxNode(Node):
         self._publish_neutral_on_disconnect = _to_bool(
             self.get_parameter("publish_neutral_on_disconnect").value
         )
+        self._diagnostic_log_period_sec = float(
+            self.get_parameter("diagnostic_log_period_sec").value
+        )
 
         if loop_hz <= 0.0:
             raise ValueError("loop_hz 必须大于 0。")
@@ -73,8 +77,15 @@ class BridgeRxNode(Node):
         self._last_control: ControlFrame | None = None
         self._last_control_time_ns: int | None = None
         self._last_serial_warn_ns = 0
+        self._last_diagnostic_log_ns = 0
         self._latest_feedback_values: list[float] = []
         self._latest_feedback_flags = 0
+        self._control_rx_count = 0
+        self._joy_publish_count = 0
+        self._feedback_tx_count = 0
+        self._logged_first_control_rx = False
+        self._logged_first_joy_publish = False
+        self._logged_first_feedback_tx = False
 
         self._feedback_subscription = self.create_subscription(
             Float32MultiArray,
@@ -111,6 +122,7 @@ class BridgeRxNode(Node):
         self._publish_joy_output()
         self._send_feedback_frame()
         self._publish_link_state()
+        self._log_diagnostics()
 
     def _read_control_frames(self) -> None:
         try:
@@ -128,6 +140,12 @@ class BridgeRxNode(Node):
                     continue
                 self._last_control = frame
                 self._last_control_time_ns = self.get_clock().now().nanoseconds
+                self._control_rx_count += 1
+                if not self._logged_first_control_rx:
+                    self.get_logger().info(
+                        f"已收到首个控制帧: seq={frame.seq}, axes={len(frame.axes)}, buttons={len(frame.buttons)}"
+                    )
+                    self._logged_first_control_rx = True
         except ProtocolError as exc:
             self._log_serial_warn(f"机器人端收到非法控制帧，已丢弃: {exc}")
 
@@ -150,6 +168,12 @@ class BridgeRxNode(Node):
             joy_msg.buttons = [0] * len(self._last_control.buttons)
 
         self._joy_publisher.publish(joy_msg)
+        self._joy_publish_count += 1
+        if not self._logged_first_joy_publish:
+            self.get_logger().info(
+                f"已发布首个 /joy_remote: axes={len(joy_msg.axes)}, buttons={len(joy_msg.buttons)}"
+            )
+            self._logged_first_joy_publish = True
 
     def _send_feedback_frame(self) -> None:
         try:
@@ -160,6 +184,12 @@ class BridgeRxNode(Node):
             )
             self._serial.write(payload)
             self._feedback_sequence = (self._feedback_sequence + 1) & 0xFF
+            self._feedback_tx_count += 1
+            if not self._logged_first_feedback_tx:
+                self.get_logger().info(
+                    f"已发送首个反馈帧: bytes={len(payload)}, values={len(self._latest_feedback_values)}, flags=0x{self._latest_feedback_flags:04x}"
+                )
+                self._logged_first_feedback_tx = True
         except (OSError, RuntimeError) as exc:
             self._log_serial_warn(f"机器人端串口发送失败，但节点会继续运行: {exc}")
         except ProtocolError as exc:
@@ -187,6 +217,25 @@ class BridgeRxNode(Node):
         if now_ns - self._last_serial_warn_ns >= throttle_ns:
             self.get_logger().warn(message)
             self._last_serial_warn_ns = now_ns
+
+    def _log_diagnostics(self) -> None:
+        if self._diagnostic_log_period_sec <= 0.0:
+            return
+
+        now_ns = self.get_clock().now().nanoseconds
+        throttle_ns = int(self._diagnostic_log_period_sec * 1e9)
+        if now_ns - self._last_diagnostic_log_ns < throttle_ns:
+            return
+
+        self.get_logger().info(
+            "机器人链路诊断: "
+            f"serial_open={self._serial.is_open}, "
+            f"control_rx={self._control_rx_count}, "
+            f"joy_remote_pub={self._joy_publish_count}, "
+            f"feedback_tx={self._feedback_tx_count}, "
+            f"link={self._is_control_alive()}"
+        )
+        self._last_diagnostic_log_ns = now_ns
 
     def destroy_node(self) -> bool:
         self._serial.close()

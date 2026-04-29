@@ -116,6 +116,11 @@ def generate_launch_description() -> LaunchDescription:
         default_value="true",
         description="链路断开时是否继续以 100Hz 发布全零 Joy。",
     )
+    diagnostic_log_period_arg = DeclareLaunchArgument(
+        "diagnostic_log_period_sec",
+        default_value="2.0",
+        description="控制链路诊断日志周期；设为 0 可关闭。",
+    )
     enable_video_stream_arg = DeclareLaunchArgument(
         "enable_video_stream",
         default_value="false",
@@ -174,6 +179,9 @@ def generate_launch_description() -> LaunchDescription:
                 "publish_neutral_on_disconnect": LaunchConfiguration(
                     "publish_neutral_on_disconnect"
                 ),
+                "diagnostic_log_period_sec": LaunchConfiguration(
+                    "diagnostic_log_period_sec"
+                ),
             }
         ],
     )
@@ -191,6 +199,7 @@ def generate_launch_description() -> LaunchDescription:
             link_topic_arg,
             stale_timeout_arg,
             publish_neutral_arg,
+            diagnostic_log_period_arg,
             enable_video_stream_arg,
             video_target_ip_arg,
             video_port_arg,

@@ -28,7 +28,7 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge steamdeck_bringup.launch.py serial_port:=/dev/ttyUSB0 baudrate:=115200 loop_hz:=100.0"
+                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge steamdeck_bringup.launch.py serial_port:=/dev/ttyUSB0 baudrate:=115200 loop_hz:=100.0 enable_video_stream:=true video_port:=5600 video_sink:=autovideosink"
             ],
             "dependsOn": [
                 "teleop: build"
@@ -41,7 +41,7 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge robot_bringup.launch.py serial_port:=/dev/ttyUSB0 baudrate:=115200 loop_hz:=100.0"
+                "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 launch teleop_bridge robot_bringup.launch.py serial_port:=/dev/ttyUSB0 baudrate:=115200 loop_hz:=100.0 enable_video_stream:=true video_target_ip:=192.168.1.10 video_port:=5600 video_width:=1280 video_height:=720 video_fps:=30 video_bitrate_kbps:=4000"
             ],
             "dependsOn": [
                 "teleop: build"

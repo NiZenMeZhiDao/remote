@@ -38,6 +38,7 @@ class BridgeTxNode(Node):
         self.declare_parameter("feedback_flags_topic", "/teleop_feedback_flags")
         self.declare_parameter("link_topic", "/teleop_link_connected")
         self.declare_parameter("feedback_timeout_sec", 0.5)
+        self.declare_parameter("diagnostic_log_period_sec", 2.0)
 
         serial_port = self.get_parameter("serial_port").value
         baudrate = int(self.get_parameter("baudrate").value)
@@ -48,6 +49,9 @@ class BridgeTxNode(Node):
         link_topic = self.get_parameter("link_topic").value
         self._feedback_timeout_sec = float(
             self.get_parameter("feedback_timeout_sec").value
+        )
+        self._diagnostic_log_period_sec = float(
+            self.get_parameter("diagnostic_log_period_sec").value
         )
 
         if loop_hz <= 0.0:
@@ -62,6 +66,13 @@ class BridgeTxNode(Node):
         self._last_feedback: FeedbackFrame | None = None
         self._last_feedback_time_ns: int | None = None
         self._last_serial_warn_ns = 0
+        self._last_diagnostic_log_ns = 0
+        self._joy_msg_count = 0
+        self._control_tx_count = 0
+        self._feedback_rx_count = 0
+        self._logged_first_joy = False
+        self._logged_first_control_tx = False
+        self._logged_first_feedback_rx = False
 
         self._joy_subscription = self.create_subscription(
             Joy,
@@ -94,11 +105,18 @@ class BridgeTxNode(Node):
         self._latest_axes = list(joy_msg.axes)
         self._latest_buttons = [int(button) for button in joy_msg.buttons]
         self._has_joy = True
+        self._joy_msg_count += 1
+        if not self._logged_first_joy:
+            self.get_logger().info(
+                f"已收到首个 /joy: axes={len(self._latest_axes)}, buttons={len(self._latest_buttons)}"
+            )
+            self._logged_first_joy = True
 
     def _loop_once(self) -> None:
         self._read_feedback_frames()
         self._send_control_frame()
         self._publish_feedback_state()
+        self._log_diagnostics()
 
     def _read_feedback_frames(self) -> None:
         try:
@@ -116,6 +134,12 @@ class BridgeTxNode(Node):
                     continue
                 self._last_feedback = frame
                 self._last_feedback_time_ns = self.get_clock().now().nanoseconds
+                self._feedback_rx_count += 1
+                if not self._logged_first_feedback_rx:
+                    self.get_logger().info(
+                        f"已收到首个机器人反馈帧: seq={frame.seq}, values={len(frame.values)}, flags=0x{frame.status_flags:04x}"
+                    )
+                    self._logged_first_feedback_rx = True
         except ProtocolError as exc:
             self._log_serial_warn(f"Steam Deck 收到非法反馈帧，已丢弃: {exc}")
 
@@ -131,6 +155,12 @@ class BridgeTxNode(Node):
             )
             self._serial.write(payload)
             self._sequence = (self._sequence + 1) & 0xFF
+            self._control_tx_count += 1
+            if not self._logged_first_control_tx:
+                self.get_logger().info(
+                    f"已发送首个控制帧: bytes={len(payload)}, axes={len(self._latest_axes)}, buttons={len(self._latest_buttons)}"
+                )
+                self._logged_first_control_tx = True
         except (OSError, RuntimeError) as exc:
             self._log_serial_warn(f"Steam Deck 串口发送失败，但节点会继续运行: {exc}")
         except ProtocolError as exc:
@@ -169,6 +199,25 @@ class BridgeTxNode(Node):
         if now_ns - self._last_serial_warn_ns >= throttle_ns:
             self.get_logger().warn(message)
             self._last_serial_warn_ns = now_ns
+
+    def _log_diagnostics(self) -> None:
+        if self._diagnostic_log_period_sec <= 0.0:
+            return
+
+        now_ns = self.get_clock().now().nanoseconds
+        throttle_ns = int(self._diagnostic_log_period_sec * 1e9)
+        if now_ns - self._last_diagnostic_log_ns < throttle_ns:
+            return
+
+        self.get_logger().info(
+            "Deck链路诊断: "
+            f"serial_open={self._serial.is_open}, "
+            f"joy_msgs={self._joy_msg_count}, "
+            f"control_tx={self._control_tx_count}, "
+            f"feedback_rx={self._feedback_rx_count}, "
+            f"link={self._is_feedback_alive()}"
+        )
+        self._last_diagnostic_log_ns = now_ns
 
     def destroy_node(self) -> bool:
         self._serial.close()
